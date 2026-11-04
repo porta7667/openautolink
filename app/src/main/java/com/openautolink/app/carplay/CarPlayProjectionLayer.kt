@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.runtime.mutableStateOf
@@ -87,11 +86,7 @@ fun CarPlayProjectionLayer(
     }.testTag("carPlayProjection")) {
         // Only this child is inset. The measurement receipt and calibration editor retain
         // the full parent. Video and the local-coordinate touch layer share the same child.
-        Box(Modifier.fillMaxSize().layout { measurable, constraints ->
-            val bounds = display.pictureInsets.bounds(constraints.maxWidth, constraints.maxHeight)
-            val child = measurable.measure(androidx.compose.ui.unit.Constraints.fixed(bounds.width, bounds.height))
-            layout(constraints.maxWidth, constraints.maxHeight) { child.place(bounds.left, bounds.top) }
-        }.testTag("carPlayPictureBounds")) {
+        Box(Modifier.fillMaxSize().carPlayPictureBounds(display.pictureInsets).testTag("carPlayPictureBounds")) {
         BoxWithConstraints(Modifier.align(Alignment.Center).then(
             if (automaticResolution && display.qualifiedVideoSelection == null) Modifier.fillMaxSize()
             else Modifier.aspectRatio(display.width.toFloat() / display.height))) {
