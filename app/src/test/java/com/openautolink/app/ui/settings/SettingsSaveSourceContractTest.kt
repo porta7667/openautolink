@@ -18,13 +18,15 @@ internal object SettingsSaveSourceContract {
         assertTrue(save.indexOf("settingsViewModel.commitSettings(commitClusterLayout)") < save.indexOf(reconnect))
         val transaction = viewModel.substringAfter("suspend fun commitSettings(").substringBefore("// Shared, memory-only next-session draft.")
         val boundaries = listOf(
-            "if (!persistCarPlaySettings()) return false",
+            "val carPlaySaved = persistCarPlaySettings()",
+            "if (!carPlaySaved) return@withContext false",
             "val secondarySaved = secondaryDraft.commit",
             "preferences.updateSecondaryDisplayPreferences(revision, edits)",
             "if (!secondarySaved)",
             "val saved = clusterDraft.commitPreferences",
             "if (!saved)",
-            "if (commitLayoutDraft == null) return true",
+            "if (commitLayoutDraft == null) {",
+            "return@withContext true",
             "val layoutSaved = try { commitLayoutDraft() }",
             "if (!layoutSaved)",
             "layoutSaved\n",
@@ -53,8 +55,8 @@ class SettingsSaveSourceContractTest {
             navigation.replace("settingsViewModel.commitSettings(commitClusterLayout)", "settingsViewModel.commitCarPlaySettings()") to viewModel,
             navigation to viewModel.replace("preferences.updateSecondaryDisplayPreferences(revision, edits)", "true"),
             navigation to viewModel.replace("if (!secondarySaved)", "if (false)"),
-            navigation to viewModel.replace("if (commitLayoutDraft == null) return true", ""),
-            navigation to viewModel.replace("if (!persistCarPlaySettings()) return false", "if (commitLayoutDraft == null) return true\nif (!persistCarPlaySettings()) return false"),
+            navigation to viewModel.replace("if (commitLayoutDraft == null) {", "if (false) {"),
+            navigation to viewModel.replace("val carPlaySaved = persistCarPlaySettings()", "if (commitLayoutDraft == null) return@withContext true\nval carPlaySaved = persistCarPlaySettings()"),
             navigation to viewModel.replace("val layoutSaved = try { commitLayoutDraft() }", "val layoutSaved = try { true }"),
             navigation to viewModel.replace("if (!layoutSaved)", "if (false)"),
         )

@@ -50,6 +50,7 @@ jobs:
             --tests 'com.openautolink.app.ui.settings.CarPlay*Calibration*' \
             --tests 'com.openautolink.app.ui.settings.CarPlaySafeEditorHostTest' \
             --tests 'com.openautolink.app.ui.settings.CarPlaySettings*' \
+            --tests 'com.openautolink.app.ui.settings.SettingsSaveSourceContractTest' \
             --tests 'com.openautolink.app.ui.settings.CarPlayAtomicCommitTest' \
             --tests 'com.openautolink.app.ui.settings.CarPlayDock*' \
             --tests 'com.openautolink.app.ui.settings.CarPlayCustomVideoSettingsTest' \
