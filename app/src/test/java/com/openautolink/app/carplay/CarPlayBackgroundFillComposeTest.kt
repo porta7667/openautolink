@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.*
@@ -47,14 +48,22 @@ class CarPlayBackgroundFillComposeTest {
         }
         val before=compose.onNodeWithTag("videoParent").fetchSemanticsNode().boundsInRoot
         compose.runOnIdle { assertEquals(600,surface!!.width); assertEquals(300,surface!!.height) }
-        val pixels=compose.onNodeWithTag("videoParent").captureToImage().toPixelMap()
+        val matched=compose.onNodeWithTag("videoParent").captureToImage()
+        val pixels=matched.toPixelMap()
+        val preview=java.io.File("build/reports/tests/background-match-preview.png")
+        preview.parentFile.mkdirs()
+        preview.outputStream().use { matched.asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG,100,it) }
         assertEquals(Color.Magenta,pixels[300,150]) // safe center is completely untouched
         assertEquals(Color(0xff887766),pixels[590,150])
         assertEquals(Color(0xff887766),pixels[300,5])
         compose.onNodeWithTag("videoParent").performTouchInput { click(Offset(590f,150f)) }
         compose.runOnIdle { assertEquals(590f,pressed!!.first,1f); assertEquals(150f,pressed!!.second,1f); matching=false }
         assertEquals(before,compose.onNodeWithTag("videoParent").fetchSemanticsNode().boundsInRoot)
-        val restored=compose.onNodeWithTag("videoParent").captureToImage().toPixelMap()
+        val original=compose.onNodeWithTag("videoParent").captureToImage()
+        java.io.File(preview.parentFile,"background-match-off.png").outputStream().use {
+            original.asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
+        }
+        val restored=original.toPixelMap()
         assertEquals(Color.Magenta,restored[590,150])
     }
 }
