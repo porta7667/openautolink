@@ -24,6 +24,8 @@ jobs:
         with:
           packages: 'platform-tools platforms;android-36 build-tools;34.0.0 ndk;28.2.13676358 cmake;3.22.1'
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
       - name: Download upstream native dependencies
         env:
           GH_TOKEN: ${{ github.token }}
@@ -40,6 +42,7 @@ jobs:
           bash ./gradlew :app:testTabletDebugUnitTest \
             --tests 'com.openautolink.app.data.CarPlay*' \
             --tests 'com.openautolink.app.carplay.CarPlayPictureLayoutTest' \
+            --tests 'com.openautolink.app.carplay.CarPlayBackground*' \
             --tests 'com.openautolink.app.carplay.CarPlaySurfaceReceiptTest' \
             --tests 'com.openautolink.app.carplay.CarPlayTouchMapperTest' \
             --tests 'com.openautolink.app.carplay.CarPlayAutoScaleWiringTest' \
@@ -68,7 +71,7 @@ jobs:
           bash ./gradlew :app:bundleRelease --no-daemon --max-workers=2
           -Dorg.gradle.jvmargs=-Xmx3g
           -PappId=com.openautolink.template -PoalBuilderUnsigned=true
-          -PoalVersionCode=576 -PoalVersionName=0.1.575-inset1
+          -PoalVersionCode=577 -PoalVersionName=0.1.575-background1
       - name: Record template digest
         run: |
           cd app/build/outputs/bundle/release

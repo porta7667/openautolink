@@ -67,7 +67,9 @@ fun CarPlayProjectionLayer(
     val currentDisplayMode = androidx.compose.runtime.rememberUpdatedState(controls.displayMode)
     val display by viewModel.carPlayDisplay.collectAsStateWithLifecycle()
     val automaticResolution by viewModel.carPlayAutomaticResolution.collectAsStateWithLifecycle()
+    val backgroundArea = remember(display) { CarPlayBackgroundArea.from(display) }
     var surfaceView by remember { mutableStateOf<SurfaceView?>(null) }
+    var backgroundSurfaceGeneration by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
     var parentReceipt by remember { mutableStateOf<Pair<androidx.compose.ui.unit.IntSize, String>?>(null) }
     fun publishParent(view: SurfaceView) {
         val receipt = parentReceipt ?: return
@@ -99,6 +101,7 @@ fun CarPlayProjectionLayer(
                         private var generation = 0L
                         private var createdSurface: Surface? = null
                         override fun surfaceCreated(holder: SurfaceHolder) {
+                            backgroundSurfaceGeneration++
                             surfaceView = this@apply
                             generation = receiptGate.created(this@apply)
                             createdSurface = holder.surface
@@ -115,6 +118,7 @@ fun CarPlayProjectionLayer(
                         }
                         override fun surfaceDestroyed(holder: SurfaceHolder) {
                             if (!receiptGate.destroyed(this@apply, generation)) return
+                            backgroundSurfaceGeneration++
                             createdSurface?.let(viewModel::onCarPlaySurfaceDestroyed)
                             createdSurface = null
                             if (surfaceView === this@apply) surfaceView = null
@@ -124,6 +128,11 @@ fun CarPlayProjectionLayer(
                 update = { view -> view.requestLayout() },
                 modifier = Modifier.fillMaxSize().testTag("carPlaySurface"),
             )
+            CarPlayBackgroundMatching(surfaceView, backgroundArea,
+                active = enabled && state.selected && state.busy && state.failure == null &&
+                    state.videoWaitActive && state.evidence.telemetry?.presentationRendered == true &&
+                    !showSettings && !showDiagnostics,
+                surfaceWidth = width, surfaceHeight = height, surfaceGeneration = backgroundSurfaceGeneration)
             Box(Modifier.fillMaxSize().pointerInteropFilter { event ->
                 if (CarPlayOverlayPolicy.forwardTouch(showSettings, showDiagnostics)) viewModel.onCarPlayTouch(event, width, height)
                 true

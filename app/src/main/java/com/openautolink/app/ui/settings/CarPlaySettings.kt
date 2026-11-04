@@ -371,7 +371,8 @@ fun CarPlayDisplaySettingsSection(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Inset entire CarPlay picture", Modifier.weight(1f))
                 Switch(checked = settings.insetEntirePicture, enabled = loaded && !saving,
-                    onCheckedChange = { inset -> viewModel.updateCarPlayDraft { it.copy(insetEntirePicture = inset) } },
+                    onCheckedChange = { inset -> viewModel.updateCarPlayDraft { it.copy(insetEntirePicture = inset,
+                        matchBackground = if (inset) false else it.matchBackground) } },
                     modifier = Modifier.testTag("carPlayInsetEntirePicture"))
             }
             Text("When on, calibration margins move the whole main-screen picture and its touch controls inward. Save changes, then unplug and reconnect USB. Turn on Fit to window in Video to use the inset area's shape.",
@@ -382,6 +383,15 @@ fun CarPlayDisplaySettingsSection(
                 else "Background can extend to the edges; controls stay inside your manual safe rectangle. No automatic curve detection.",
                 style = MaterialTheme.typography.bodyMedium)
             Text("Safe edges: T ${settings.safeTop / 100.0}% · B ${settings.safeBottom / 100.0}% · L ${settings.safeLeft / 100.0}% · R ${settings.safeRight / 100.0}%",
+                style = MaterialTheme.typography.bodyMedium)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Match background in margins", Modifier.weight(1f))
+                Switch(checked = settings.matchBackground, enabled = loaded && !saving,
+                    onCheckedChange = { match -> viewModel.updateCarPlayDraft { it.copy(matchBackground = match,
+                        insetEntirePicture = if (match) false else it.insetEntirePicture) } },
+                    modifier = Modifier.testTag("carPlayMatchBackground"))
+            }
+            Text("Keeps the full-size picture and blends sampled edge colors into the calibrated margins. Approximate: artwork and map colors may appear in the fill. Turning this on switches off entire-picture insets. Save changes, then reconnect USB.",
                 style = MaterialTheme.typography.bodyMedium)
         }
 

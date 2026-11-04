@@ -54,6 +54,8 @@ data class CarPlaySettings(
     val safeRight: Int = 0,
     /** Reuse calibration edges to physically inset main video and touch on the next session. */
     val insetEntirePicture: Boolean = false,
+    /** Cosmetic main-screen edge-color fill; retains native full-window safe-area geometry. */
+    val matchBackground: Boolean = false,
     /** Memory-only partial text; invalid drafts are retained and never silently restored at Save. */
     @kotlinx.serialization.Transient val widthDraft: String? = null,
     @kotlinx.serialization.Transient val heightDraft: String? = null,
@@ -73,7 +75,8 @@ data class CarPlaySettings(
             dockPosition = CarPlayDockPosition.entries.first { it.id == dockPosition },
             pictureInsets = if (insetEntirePicture)
                 com.openautolink.carplaylab.media.CarPlayPictureInsets(safeTop, safeBottom, safeLeft, safeRight)
-                else com.openautolink.carplaylab.media.CarPlayPictureInsets())
+                else com.openautolink.carplaylab.media.CarPlayPictureInsets(),
+            matchBackground = matchBackground && !insetEntirePicture)
     }
     /** Only tier-named choices are detail intent; geometry-named presets and Custom stay exact. */
     val windowDetail: Boolean get() = fitToWindow && resolution in setOf("720p", "1080p", "1440p", "4k")
