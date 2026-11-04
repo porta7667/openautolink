@@ -368,9 +368,18 @@ fun CarPlayDisplaySettingsSection(
         SectionHeader("CarPlay")
         SettingsGroup {
             Text("CarPlay safe area", style = MaterialTheme.typography.titleMedium)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Inset entire CarPlay picture", Modifier.weight(1f))
+                Switch(checked = settings.insetEntirePicture, enabled = loaded && !saving,
+                    onCheckedChange = { inset -> viewModel.updateCarPlayDraft { it.copy(insetEntirePicture = inset) } },
+                    modifier = Modifier.testTag("carPlayInsetEntirePicture"))
+            }
+            Text("When on, calibration margins move the whole main-screen picture and its touch controls inward. Save changes, then unplug and reconnect USB. Turn on Fit to window in Video to use the inset area's shape.",
+                style = MaterialTheme.typography.bodyMedium)
             OutlinedButton(onClick = onNavigateToCarPlaySafeAreaEditor, enabled = !saving,
-                modifier = Modifier.testTag("carPlaySafeAreaEditor")) { Text("Calibrate safe controls") }
-            Text("Background can extend to the edges; controls stay inside your manual safe rectangle. No automatic curve detection.",
+                modifier = Modifier.testTag("carPlaySafeAreaEditor")) { Text(if (settings.insetEntirePicture) "Calibrate picture margins" else "Calibrate safe controls") }
+            Text(if (settings.insetEntirePicture) "The entire picture stays inside these margins; unused space is black. No automatic curve detection."
+                else "Background can extend to the edges; controls stay inside your manual safe rectangle. No automatic curve detection.",
                 style = MaterialTheme.typography.bodyMedium)
             Text("Safe edges: T ${settings.safeTop / 100.0}% · B ${settings.safeBottom / 100.0}% · L ${settings.safeLeft / 100.0}% · R ${settings.safeRight / 100.0}%",
                 style = MaterialTheme.typography.bodyMedium)

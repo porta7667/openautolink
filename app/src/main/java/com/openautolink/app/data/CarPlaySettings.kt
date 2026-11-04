@@ -52,6 +52,8 @@ data class CarPlaySettings(
     val safeBottom: Int = 0,
     val safeLeft: Int = 0,
     val safeRight: Int = 0,
+    /** Reuse calibration edges to physically inset main video and touch on the next session. */
+    val insetEntirePicture: Boolean = false,
     /** Memory-only partial text; invalid drafts are retained and never silently restored at Save. */
     @kotlinx.serialization.Transient val widthDraft: String? = null,
     @kotlinx.serialization.Transient val heightDraft: String? = null,
@@ -68,7 +70,10 @@ data class CarPlaySettings(
             customWidth = widthPixels, customHeight = heightPixels, preferHevc = videoCodec == "hevc",
             scaleMode = if (autoScale) com.openautolink.carplaylab.media.CarPlayScaleReceipt.Mode.AUTOMATIC
                 else com.openautolink.carplaylab.media.CarPlayScaleReceipt.Mode.MANUAL,
-            dockPosition = CarPlayDockPosition.entries.first { it.id == dockPosition })
+            dockPosition = CarPlayDockPosition.entries.first { it.id == dockPosition },
+            pictureInsets = if (insetEntirePicture)
+                com.openautolink.carplaylab.media.CarPlayPictureInsets(safeTop, safeBottom, safeLeft, safeRight)
+                else com.openautolink.carplaylab.media.CarPlayPictureInsets())
     }
     /** Only tier-named choices are detail intent; geometry-named presets and Custom stay exact. */
     val windowDetail: Boolean get() = fitToWindow && resolution in setOf("720p", "1080p", "1440p", "4k")
@@ -77,15 +82,20 @@ data class CarPlaySettings(
     fun qualifiedDisplay(viewport: com.openautolink.carplaylab.media.CarPlayAutoScalePolicy.Input?,
         probe: com.shilapi.xcertplay.media.VideoDecoderProbe = com.shilapi.xcertplay.media.CarPlayVideoQualification.androidProbe()
     ): com.openautolink.carplaylab.media.CarPlayDisplayPreferences {
-        val requested = displayRequest().copy(autoScaleInput = if (autoScale) viewport else null)
+        val pictureViewport = if (insetEntirePicture) {
+            val parent = requireNotNull(viewport) { "Picture margins need a measured parent" }
+            val bounds = displayRequest().pictureInsets.bounds(parent.viewportWidthPx, parent.viewportHeightPx)
+            parent.copy(viewportWidthPx = bounds.width, viewportHeightPx = bounds.height)
+        } else viewport
+        val requested = displayRequest().copy(autoScaleInput = if (autoScale) pictureViewport else null)
         val video = if (usesWindowGeometry) {
             com.shilapi.xcertplay.media.CarPlayVideoQualification.selectAutomatic(
-                viewport?.viewportWidthPx ?: 0, viewport?.viewportHeightPx ?: 0,
+                pictureViewport?.viewportWidthPx ?: 0, pictureViewport?.viewportHeightPx ?: 0,
                 viewport?.displayWidthPx ?: 0, viewport?.displayHeightPx ?: 0, fps, requested.preferHevc, probe,
                 detailPixels = if (autoResolution) 2560L * 1440 else requested.width.toLong() * requested.height)
         } else com.shilapi.xcertplay.media.CarPlayVideoQualification.select(
             requested.width, requested.height, requested.fps, requested.preferHevc, probe)
-        val safe = if (!hasSafeCalibration) null else {
+        val safe = if (insetEntirePicture || !hasSafeCalibration) null else {
             require(listOf(safeTop, safeBottom, safeLeft, safeRight).all { it in 0..4999 })
             val parent = requireNotNull(viewport) { "Safe area needs a measured parent" }
             require(parent.viewportWidthPx in 1..16384 && parent.viewportHeightPx in 1..16384) {

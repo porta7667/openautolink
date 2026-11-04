@@ -569,7 +569,7 @@ class ProjectionViewModel(application: Application) : AndroidViewModel(applicati
                 carPlaySurface.first { it?.isValid == true }!!
             }
             val savedDisplayMode = preferences.displayMode.first()
-            val viewport = if (saved.autoScale || saved.autoResolution || saved.windowDetail || saved.hasSafeCalibration) {
+            val viewport = if (saved.autoScale || saved.autoResolution || saved.windowDetail || saved.hasSafeCalibration || saved.insetEntirePicture) {
                 // A display-mode switch can reuse the Surface while its measured bounds are pending.
                 // Do not use a fullscreen receipt for a system-UI-visible receiver (or vice versa).
                 kotlinx.coroutines.withTimeoutOrNull(1_500) {

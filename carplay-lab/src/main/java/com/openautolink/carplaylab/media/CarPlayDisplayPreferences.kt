@@ -46,6 +46,8 @@ data class CarPlayDisplayPreferences(
     private val frozenScale: CarPlayScaleReceipt? = null,
     /** One full-canvas next-session area only; Automatic preserves the original wire description. */
     val dockPosition: CarPlayDockPosition = CarPlayDockPosition.AUTOMATIC,
+    /** Local main-screen presentation only; never serialized as phone safe-area padding. */
+    val pictureInsets: CarPlayPictureInsets = CarPlayPictureInsets(),
 ) {
     init {
         require(fps in FRAME_RATES) { "Maximum FPS must be an integer from 1 to 60" }
@@ -62,7 +64,7 @@ data class CarPlayDisplayPreferences(
     /** A derived frozen receipt must not change preference/request equality or hash semantics. */
     private fun requestIdentity(): List<Any?> = listOf(resolution, fps, widthPhysicalMm, rightHandDrive,
         autoScaleInput, customWidth, customHeight, preferHevc, qualifiedVideoSelection, encodedSafeInsets, scaleMode,
-        dockPosition)
+        dockPosition, pictureInsets)
     override fun equals(other: Any?): Boolean = this === other ||
         other is CarPlayDisplayPreferences && requestIdentity() == other.requestIdentity()
     override fun hashCode(): Int = requestIdentity().hashCode()

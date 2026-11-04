@@ -1,0 +1,58 @@
+name: Custom CarPlay picture insets
+on:
+  push:
+    branches: [codex/carplay-picture-insets]
+permissions:
+  contents: read
+concurrency:
+  group: custom-picture-insets
+  cancel-in-progress: false
+jobs:
+  verify-and-build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;34.0.0 ndk;28.2.13676358 cmake;3.22.1'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Download upstream native dependencies
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for ABI in arm64-v8a x86_64; do
+            gh release download native-deps --repo mossyhub/openautolink -p "native-deps-${ABI}.tar.gz" -O "$RUNNER_TEMP/native-deps-${ABI}.tar.gz"
+            tar xzf "$RUNNER_TEMP/native-deps-${ABI}.tar.gz" -C app/src/main/cpp/
+          done
+      - name: Run app and CarPlay receiver tests
+        run: bash ./gradlew :app:testTabletDebugUnitTest :carplay-lab:testDebugUnitTest --no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx3g
+      - name: Build unsigned credential-free custom template
+        run: >-
+          bash ./gradlew :app:bundleRelease --no-daemon --max-workers=2
+          -Dorg.gradle.jvmargs=-Xmx3g
+          -PappId=com.openautolink.template -PoalBuilderUnsigned=true
+          -PoalVersionCode=576 -PoalVersionName=0.1.575-inset1
+      - name: Record template digest
+        run: |
+          cd app/build/outputs/bundle/release
+          sha256sum app-release.aab > app-release.aab.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: custom-picture-insets-results
+          path: |
+            app/build/test-results/
+            carplay-lab/build/test-results/
+            app/build/reports/tests/
+            carplay-lab/build/reports/tests/
+            app/build/outputs/bundle/release/*.aab*
+          if-no-files-found: warn
+          retention-days: 14
