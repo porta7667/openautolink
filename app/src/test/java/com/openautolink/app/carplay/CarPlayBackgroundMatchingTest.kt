@@ -80,4 +80,12 @@ class CarPlayBackgroundMatchingTest {
         assertEquals(listOf<CarPlayBackgroundPalette?>(null),outputs); assertEquals(400L,delay)
         loop.close()
     }
+    @Test fun captureAdmissionSurvivesLoopReplacementUntilOldPixelCopyCompletes() {
+        val gate = CarPlayBackgroundCopyGate()
+        assertTrue(gate.acquire())
+        assertFalse(gate.acquire()) // effect recreation must not issue a second native request
+        gate.release()
+        assertTrue(gate.acquire())
+        gate.release()
+    }
 }

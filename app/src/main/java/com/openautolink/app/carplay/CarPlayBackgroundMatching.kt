@@ -19,8 +19,9 @@ import androidx.lifecycle.Lifecycle
 
 /** PixelCopy reads the decoder Surface only, so the overlay never samples itself. */
 internal fun copyCarPlayBackground(view: SurfaceView, area: CarPlayBackgroundArea,
-    handler: Handler, done: (CarPlayBackgroundPalette?) -> Unit) {
+    handler: Handler, gate: CarPlayBackgroundCopyGate, done: (CarPlayBackgroundPalette?) -> Unit) {
     if (view.width <= 0 || view.height <= 0 || !view.holder.surface.isValid) { done(null); return }
+    if (!gate.acquire()) { done(null); return }
     val width = 160
     val height = (width.toDouble() * view.height / view.width).toInt().coerceIn(16, 96)
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -32,22 +33,24 @@ internal fun copyCarPlayBackground(view: SurfaceView, area: CarPlayBackgroundAre
                     bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
                     CarPlayBackgroundPalette.sample(pixels, width, height, area)
                 }
-            } finally { bitmap.recycle() }
+            } finally { bitmap.recycle(); gate.release() }
             done(palette)
         }, handler)
-    } catch (_: IllegalArgumentException) { bitmap.recycle(); done(null) }
+    } catch (_: IllegalArgumentException) { bitmap.recycle(); gate.release(); done(null) }
 }
 
 @Composable
 internal fun CarPlayBackgroundMatching(view: SurfaceView?, area: CarPlayBackgroundArea?, active: Boolean,
     surfaceWidth: Int, surfaceHeight: Int, surfaceGeneration: Long) {
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
+    // Survives effect restarts: PixelCopy itself cannot be cancelled during resize/resume.
+    val copyGate = remember(view) { CarPlayBackgroundCopyGate() }
     var colors by remember(view, area, surfaceWidth, surfaceHeight, surfaceGeneration) { mutableStateOf<CarPlayBackgroundPalette?>(null) }
     DisposableEffect(view, area, active, surfaceWidth, surfaceHeight, surfaceGeneration, lifecycle) {
         val loop = if (view != null && area != null && active && lifecycle.isAtLeast(Lifecycle.State.STARTED)) {
             val handler = Handler(Looper.getMainLooper())
             CarPlayBackgroundLoop(
-                capture = { done -> copyCarPlayBackground(view, area, handler, done) },
+                capture = { done -> copyCarPlayBackground(view, area, handler, copyGate, done) },
                 post = { task, delay -> handler.postDelayed(task, delay); Unit },
                 remove = { task -> handler.removeCallbacks(task) },
                 publish = { colors = it },

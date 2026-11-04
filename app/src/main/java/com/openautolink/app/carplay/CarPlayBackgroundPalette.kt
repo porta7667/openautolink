@@ -52,6 +52,12 @@ internal data class CarPlayBackgroundPalette(
 }
 
 /** Main-thread loop: one outstanding capture, bounded sampling, stale callback rejection. */
+internal class CarPlayBackgroundCopyGate {
+    private var pending = false
+    fun acquire(): Boolean = if (pending) false else { pending = true; true }
+    fun release() { pending = false }
+}
+
 internal class CarPlayBackgroundLoop(
     private val capture: ((CarPlayBackgroundPalette?) -> Unit) -> Unit,
     private val post: (Runnable, Long) -> Unit,
