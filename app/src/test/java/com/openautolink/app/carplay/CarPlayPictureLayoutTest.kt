@@ -1,6 +1,8 @@
 package com.openautolink.app.carplay
 
 import android.app.Application
+import android.view.SurfaceView
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
@@ -29,6 +31,7 @@ class CarPlayPictureLayoutTest {
     @Test fun pictureAndTouchMoveTogetherWhileParentStaysFullSize() {
         val insets = mutableStateOf(CarPlayPictureInsets(top=1000, right=2000))
         var normalized: Pair<Double, Double>? = null
+        var surface: SurfaceView? = null
         val mapper = CarPlayTouchMapper()
         compose.setContent {
             Box(Modifier.size(1000.dp, 500.dp).testTag("parent")) {
@@ -36,7 +39,8 @@ class CarPlayPictureLayoutTest {
                     BoxWithConstraints(Modifier.align(Alignment.Center).aspectRatio(16f/9)) {
                         val width = constraints.maxWidth
                         val height = constraints.maxHeight
-                        Box(Modifier.fillMaxSize().testTag("video"))
+                        AndroidView(factory = { context -> SurfaceView(context).also { surface = it } },
+                            modifier = Modifier.fillMaxSize().testTag("video"))
                         Box(Modifier.fillMaxSize().testTag("touch").pointerInteropFilter { event ->
                             val contacts = mapper.map(event.actionMasked, event.actionIndex,
                                 listOf(CarPlayPointer(event.getPointerId(0), event.x, event.y)), width, height)
@@ -51,6 +55,10 @@ class CarPlayPictureLayoutTest {
         val video = compose.onNodeWithTag("video").fetchSemanticsNode().boundsInRoot
         val touch = compose.onNodeWithTag("touch").fetchSemanticsNode().boundsInRoot
         assertEquals(video, touch)
+        compose.runOnIdle {
+            assertEquals(800, surface!!.width)
+            assertEquals(450, surface!!.height)
+        }
         assertEquals(800f, video.width, 1f)
         assertEquals(450f, video.height, 1f)
         assertEquals(50f, video.top - parent.top, 1f)
